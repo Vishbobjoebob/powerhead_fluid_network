@@ -1,0 +1,122 @@
+meta:
+  title: "Powerhead (radial-only Gülich pump)"
+
+fluids:
+  fuel: { rho: 800.0,  mu: 0.002 }
+  lox:  { rho: 1140.0, mu: 1.45e-4}
+
+boundaries:
+  tanks:
+    fuel_tank: { p: 965264.020 }  # 140 psi in Pa
+    lox_tank:  { p: 965264.020 }
+  chamber:
+    Pc: 3.758e6  # initial Pc guess steady solve backs Pc out with TCA
+
+geometry:
+  fuel:
+    suction_lines:
+      - { L: 0.026*5, D: 0.026, eps: 5.0e-5 }
+    suction_bends:
+      - { K: 0.50, D: 0.026 }
+    discharge_lines:
+      - { L: 0.026*5, D: 0.026, eps: 5.0e-5 }
+    discharge_bends:
+      - { K: 0.50, D: 0.026 }
+    injector:
+      CdA: 2.0e-5
+  lox:
+    suction_lines:
+      - { L: 0.026*5, D: 0.026, eps: 5.0e-5 }
+    suction_bends:
+      - { K: 0.50, D: 0.026 }
+    discharge_lines:
+      - { L: 0.026*5, D: 0.026, eps: 5.0e-5 }
+    discharge_bends:
+      - { K: 0.50, D: 0.026 }
+    injector:
+      CdA: 3.0e-5
+
+pumps:
+  fuel:
+    geom:
+      d1: 0.050
+      dn: 0.020
+      d2: 0.090
+      b2: 0.009
+      zLa: 7
+      beta2B_deg: 22.0
+      alpha1_deg: 90.0
+      e1: 0.0011
+      e:  0.0023
+      lambdaLa_deg: 90.0
+    efficiency:
+      Q_ref: 1
+      n_q: 18.7
+    leakage:
+      QS3: 6.061134e-05
+      QSp: 1.241655e-04
+
+  lox:
+    geom:
+      d1: 0.068
+      dn: 0.017
+      d2: 0.068
+      b2: 0.0042
+      zLa: 7
+      beta2B_deg: 22.0
+      alpha1_deg: 90.0
+      e1: 0.0011
+      e:  0.0023
+      lambdaLa_deg: 90.0
+    efficiency:
+      Q_ref: 1
+      n_q: 18.7
+    leakage:
+      QS3: 6.061134e-05
+      QSp: 1.241655e-04
+
+nozzle:
+  oxName: "LOX"
+  fuelName: "RP1"
+  throat_diameter_m: 3.00 * 0.0254
+  area_ratio: 4.8
+  Cd_throat: 1.0
+  c_star_eff: 0.90
+  p_amb: 8.00 * 6985
+
+steady:
+  N_fuel_rpm: 20000.0
+  N_lox_rpm:  20000.0
+  use_nozzle_solve: true
+
+optimize:
+  enabled: true          # set false to skip optimizer
+  thrust_target_N: 3500 * 4.448
+  thrust_mode: "eq"      # "ge" - minimium thrust, "le" - maximum thrust, or "eq" - thrust matching
+  variables:
+    - fuel_tank_p
+    - lox_tank_p
+    - throat_diameter_m
+    - area_ratio
+    - N_fuel_rpm
+    - N_lox_rpm
+    - fuel_d1
+    - fuel_dn
+    - fuel_d2
+    - lox_d1
+    - lox_dn
+    - lox_d2
+  bounds:
+    fuel_tank_p: [8.0e5, 2.5e6]
+    lox_tank_p:  [8.0e5, 2.5e6]
+    throat_diameter_m: [0.040, 0.120]
+    area_ratio: [3.0, 12.0]
+    N_fuel_rpm: [8000, 35000]
+    N_lox_rpm:  [8000, 35000]
+    fuel_d1: [0.03, 0.07]
+    fuel_dn: [0.01, 0.05]
+    fuel_d2: [0.06, 0.12]
+    lox_d1:  [0.03, 0.07]
+    lox_dn:  [0.01, 0.05]
+    lox_d2:  [0.06, 0.12]
+

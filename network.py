@@ -1,3 +1,5 @@
+# network.py
+from __future__ import annotations
 import numpy as np
 from scipy.optimize import fsolve
 from components import g, area
@@ -11,16 +13,14 @@ class Chamber:
         self.Pc = float(Pc)  # Pa
 
 class Branch:
-    """
-    Represents full fluid system for either fuel or lox
-    """
+    """Full fluid branch (fuel or LOX)."""
     def __init__(self, rho, mu, tank,
                  suction_lines, suction_bends,
                  pump,
                  discharge_lines, discharge_bends,
                  injector):
-        self.rho = float(rho)   # kg/m^3
-        self.mu  = float(mu)    # Pa-s
+        self.rho = float(rho)
+        self.mu  = float(mu)
         self.tank = tank
         self.suction_lines = list(suction_lines or [])
         self.suction_bends = list(suction_bends or [])
@@ -54,7 +54,7 @@ class Branch:
         p_tank - Δp_suct + ρ g H(Q,N) = Pc + Δp_dis + Δp_inj
         Returns LHS - RHS (Pa).
         """
-        Q = mdot / self.rho  # units: m^3/s
+        Q = mdot / self.rho
         dps = self.suction_dp(mdot)
         dPp = self.rho * g * self.pump.H(Q, N_rpm, self.rho, self.mu)
         dpd = self.discharge_dp(mdot)
@@ -64,27 +64,17 @@ class Branch:
         return lhs - rhs
 
     def npsh_available(self, mdot, p_vap):
-        """
-        NPSHa = (p_tank - p_vap - Δp_suct) / (ρ g)
-        """
         return (self.tank.p - p_vap - self.suction_dp(mdot)) / (self.rho * g)
 
-# --- steady solvers ----------------------------------------------------------
+# steady state (explicit Pc) retained for transient/legacy usage
 def solve_given_Pc(fuel, lox, Nf, Nox, Pc):
     def F(x):
         mf, mo = x
         return [fuel.residual(mf, Nf, Pc), lox.residual(mo, Nox, Pc)]
-    mf, mo = fsolve(F, x0 = [1.0, 2.0])
+    mf, mo = fsolve(F, x0=[1.0, 2.0])
     return {"Pc": Pc, "mdot_f": mf, "mdot_ox": mo, "MR": mo / mf}
 
-def solve_with_MR(fuel, lox, Nf, Nox, MR):
-    def F(x):
-        Pc, mf, mo = x
-        return [fuel.residual(mf, Nf, Pc), lox.residual(mo, Nox, Pc), mo - MR * mf]
-    Pc, mf, mo = fsolve(F, x0 = [2.0e6, 1.0, MR])
-    return {"Pc": Pc, "mdot_f": mf, "mdot_ox": mo, "MR": mo / mf}
-
-# --- transient RHS (one state per branch: Q) --------------------------------
+# transient RHS
 def rhs_branch_inertive(t, Q, br, N_of_t, Pc_of_t, Ls, Ld):
     """
     (Ls + Ld) dQ/dt = p_tank - Δp_suct + ρ g H(Q,N) - (Pc + Δp_dis + Δp_inj)
